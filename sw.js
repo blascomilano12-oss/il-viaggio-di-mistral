@@ -1,5 +1,5 @@
 /* Mistral flipbook PWA — cache-first versionata */
-const VERSION = 'mistral-v1';
+const VERSION = 'mistral-v3';
 const CORE = [
   './',
   './index.html',

@@ -35,18 +35,34 @@ button.nav:active{transform:scale(.96)}
 #thumbbar img:hover{opacity:1}
 #thumbbar img.active{border-color:#c9b47e;opacity:1}
 #sound-toggle{background:transparent;border:1px solid #8a7a58;color:#e8dfc8;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:14px;min-height:44px}
+/* Desktop: il libro non deve mai coprire header/footer su viewport basse */
+@media (min-width:701px){
+  #book{max-width:min(100%, max(320px, calc((100dvh - 270px) * 1.3333))) !important;margin:auto}
+}
 #start-hint{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:70px;pointer-events:none;transition:opacity .6s}
 #start-hint>div{background:rgba(0,0,0,.55);color:#fff;padding:10px 22px;border-radius:24px;font-size:14px;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
 #loading{position:fixed;inset:0;background:#2b261f;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#e8dfc8;z-index:999}
 #loading .bar{width:260px;height:6px;background:#3a3329;border-radius:3px;overflow:hidden}
 #loading .bar>div{height:100%;background:linear-gradient(90deg,#c9b47e,#e8dfc8);width:0%;transition:width .3s}
-/* Solo mobile verticale: footer impilato, slider full-width, thumbnails compatte */
+#topbar{display:none}
+#sheet{display:contents}
+#sheet-backdrop{display:none}
+#sheet-close{display:none}
+/* Solo mobile verticale: lettura full-page, controlli nel menu a scomparsa */
 @media (max-width:700px){
-  header{padding:10px 8px 4px}
-  header p{display:none}
-  #book-wrap{padding:6px}
+  header{display:none}
+  #topbar{display:flex;position:fixed;top:0;left:0;right:0;z-index:60;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;background:rgba(20,16,12,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#e8dfc8}
+  #topbar-title{flex:1;text-align:center;font-size:14px;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .icon-btn{background:transparent;border:1px solid #8a7a58;color:#e8dfc8;border-radius:8px;min-width:44px;min-height:44px;font-size:19px;cursor:pointer;line-height:1}
+  .icon-btn:active{transform:scale(.94)}
+  #book-wrap{padding:calc(60px + env(safe-area-inset-top)) 2px 2px}
+  #sheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:55;background:#241f18;border-top:1px solid #8a7a58;border-radius:14px 14px 0 0;transform:translateY(105%);transition:transform .28s ease;max-height:62dvh;overflow-y:auto;box-shadow:0 -12px 40px rgba(0,0,0,.5)}
+  body.menu-open #sheet{transform:translateY(0)}
+  #sheet-backdrop{display:block;position:fixed;inset:0;z-index:54;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .28s}
+  body.menu-open #sheet-backdrop{opacity:1;pointer-events:auto}
   footer{gap:8px}
+  #sheet-close{display:block;flex:1 1 100%;background:transparent;border:none;color:#cfc4a8;font-size:15px;padding:10px;cursor:pointer;min-height:44px}
   #slider{order:3;flex:1 1 100%;width:100%}
   button.nav{flex:1;padding:10px 8px}
   #counter{flex:1}
@@ -64,6 +80,12 @@ button.nav:active{transform:scale(.96)}
   <div id="pct" style="font-size:13px;opacity:.7">0%</div>
 </div>
 
+<div id="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Apri indice e controlli">☰</button>
+  <span id="topbar-title">Il viaggio di Mistral</span>
+  <button class="icon-btn" id="sound-icon" aria-label="Attiva o disattiva suono" aria-pressed="true">🔊</button>
+</div>
+
 <header>
   <h1>A. Mor — Il viaggio di Mistral</h1>
   <p>Volevo insegnare Amore · trascina gli angoli delle pagine</p>
@@ -74,7 +96,10 @@ button.nav:active{transform:scale(.96)}
   <div id="start-hint"><div>👆 Tocca o trascina un angolo della pagina (sblocca anche l'audio)</div></div>
 </div>
 
+<div id="sheet-backdrop"></div>
+<div id="sheet">
 <footer>
+  <button id="sheet-close" aria-label="Chiudi menu">✕ Chiudi</button>
   <button class="nav" id="prev" aria-label="Pagina precedente">‹ Indietro</button>
   <input type="range" id="slider" min="0" max="211" value="0" aria-label="Vai alla pagina">
   <span id="counter">Pag. 1 / 212</span>
@@ -82,6 +107,7 @@ button.nav:active{transform:scale(.96)}
   <button id="sound-toggle" title="Attiva/disattiva suono" aria-pressed="true">🔊 Suono: ON</button>
 </footer>
 <div id="thumbbar"></div>
+</div>
 
 <script src="./assets/stpageflip.min.js"></script>
 <script>
@@ -197,17 +223,30 @@ function initBook() {
     sliderDragging = false;
     const target = +slider.value;
     const cur = pageFlip.getCurrentPageIndex();
-    if (target !== cur) { playFlip(); pageFlip.flip(target); }
+    if (target !== cur) { playFlip(); pageFlip.flip(target); closeMenu(); }
   });
 
-  document.getElementById('prev').onclick = () => { playFlip(); pageFlip.flipPrev(); };
-  document.getElementById('next').onclick = () => { playFlip(); pageFlip.flipNext(); };
+  document.getElementById('prev').onclick = () => { playFlip(); pageFlip.flipPrev(); closeMenu(); };
+  document.getElementById('next').onclick = () => { playFlip(); pageFlip.flipNext(); closeMenu(); };
   const sndBtn = document.getElementById('sound-toggle');
-  sndBtn.onclick = () => {
-    soundOn = !soundOn;
+  const sndIcon = document.getElementById('sound-icon');
+  function setSound(on) {
+    soundOn = on;
     sndBtn.textContent = soundOn ? '🔊 Suono: ON' : '🔇 Suono: OFF';
     sndBtn.setAttribute('aria-pressed', String(soundOn));
-  };
+    if (sndIcon) {
+      sndIcon.textContent = soundOn ? '🔊' : '🔇';
+      sndIcon.setAttribute('aria-pressed', String(soundOn));
+    }
+  }
+  sndBtn.onclick = () => setSound(!soundOn);
+  if (sndIcon) sndIcon.onclick = () => setSound(!soundOn);
+
+  // Menu indice a scomparsa (solo mobile: topbar ☰ + bottom sheet)
+  function closeMenu() { document.body.classList.remove('menu-open'); }
+  document.getElementById('menu-btn').onclick = () => document.body.classList.toggle('menu-open');
+  document.getElementById('sheet-backdrop').onclick = closeMenu;
+  document.getElementById('sheet-close').onclick = closeMenu;
 
   document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight') { playFlip(); pageFlip.flipNext(); }
@@ -237,7 +276,7 @@ function initBook() {
     img.dataset.page = i;
     img.loading = 'lazy';
     img.decoding = 'async';
-    img.onclick = () => { playFlip(); pageFlip.flip(i); };
+    img.onclick = () => { playFlip(); pageFlip.flip(i); closeMenu(); };
     thumbbar.appendChild(img);
   });
 
