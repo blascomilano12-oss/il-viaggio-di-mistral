@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2b261f">
+<meta name="description" content="A. Mor — Il viaggio di Mistral — Flipbook. Volevo insegnare Amore.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mistral">
+<title>A. Mor — Il viaggio di Mistral — Flipbook</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;height:100dvh;overflow:hidden}
+body{background:radial-gradient(ellipse at center,#4a4238 0%,#2b261f 70%,#1a1611 100%);font-family:Georgia,'Times New Roman',serif;display:flex;flex-direction:column}
+header{text-align:center;color:#e8dfc8;padding:14px 10px 6px;text-shadow:0 1px 3px rgba(0,0,0,.6);flex-shrink:0}
+header h1{font-size:clamp(16px,2.5vw,24px);font-weight:normal;letter-spacing:1px}
+header p{font-size:clamp(11px,1.4vw,13px);opacity:.7;font-style:italic}
+#book-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:10px;position:relative;touch-action:pan-y}
+#book{box-shadow:0 25px 60px rgba(0,0,0,.65);border-radius:4px}
+.page-img{width:100%;height:100%;display:block;background:#f5efe2}
+footer{flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:10px 14px;padding:10px calc(10px + env(safe-area-inset-right))  calc(10px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));color:#cfc4a8;flex-wrap:wrap}
+button.nav{background:#6b5d43;color:#f3ead3;border:none;border-radius:6px;padding:9px 18px;font-size:15px;cursor:pointer;font-family:inherit;transition:background .2s;min-height:44px}
+button.nav:hover{background:#8a7a58}
+button.nav:active{transform:scale(.96)}
+#slider{width:min(340px,40vw);accent-color:#c9b47e;cursor:pointer;min-height:44px}
+#counter{font-size:14px;min-width:110px;text-align:center;color:#e8dfc8}
+#thumbbar{flex-shrink:0;display:flex;gap:6px;overflow-x:auto;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:rgba(0,0,0,.25);touch-action:pan-x pan-y}
+#thumbbar img{height:64px;width:auto;border:2px solid transparent;border-radius:2px;cursor:pointer;opacity:.75;flex-shrink:0;background:#f5efe2}
+#thumbbar img:hover{opacity:1}
+#thumbbar img.active{border-color:#c9b47e;opacity:1}
+#sound-toggle{background:transparent;border:1px solid #8a7a58;color:#e8dfc8;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:14px;min-height:44px}
+#start-hint{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:70px;pointer-events:none;transition:opacity .6s}
+#start-hint>div{background:rgba(0,0,0,.55);color:#fff;padding:10px 22px;border-radius:24px;font-size:14px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+#loading{position:fixed;inset:0;background:#2b261f;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#e8dfc8;z-index:999}
+#loading .bar{width:260px;height:6px;background:#3a3329;border-radius:3px;overflow:hidden}
+#loading .bar>div{height:100%;background:linear-gradient(90deg,#c9b47e,#e8dfc8);width:0%;transition:width .3s}
+/* Solo mobile verticale: footer impilato, slider full-width, thumbnails compatte */
+@media (max-width:700px){
+  header{padding:10px 8px 4px}
+  header p{display:none}
+  #book-wrap{padding:6px}
+  footer{gap:8px}
+  #slider{order:3;flex:1 1 100%;width:100%}
+  button.nav{flex:1;padding:10px 8px}
+  #counter{flex:1}
+  #sound-toggle{flex:1;white-space:nowrap}
+  #thumbbar img{height:52px}
+}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div style="font-size:18px;letter-spacing:1px">A. Mor — Il viaggio di Mistral</div>
+  <div>Preparazione del libro…</div>
+  <div class="bar"><div id="barfill"></div></div>
+  <div id="pct" style="font-size:13px;opacity:.7">0%</div>
+</div>
+
+<header>
+  <h1>A. Mor — Il viaggio di Mistral</h1>
+  <p>Volevo insegnare Amore · trascina gli angoli delle pagine</p>
+</header>
+
+<div id="book-wrap">
+  <div id="book"></div>
+  <div id="start-hint"><div>👆 Tocca o trascina un angolo della pagina (sblocca anche l'audio)</div></div>
+</div>
+
+<footer>
+  <button class="nav" id="prev" aria-label="Pagina precedente">‹ Indietro</button>
+  <input type="range" id="slider" min="0" max="211" value="0" aria-label="Vai alla pagina">
+  <span id="counter">Pag. 1 / 212</span>
+  <button class="nav" id="next" aria-label="Pagina successiva">Avanti ›</button>
+  <button id="sound-toggle" title="Attiva/disattiva suono" aria-pressed="true">🔊 Suono: ON</button>
+</footer>
+<div id="thumbbar"></div>
+
+<script src="./assets/stpageflip.min.js"></script>
+<script>
+const TOTAL = 212;
+const pad = n => String(n).padStart(3, '0');
+const pageURL = i => './pages/pg-' + pad(i + 1) + '.webp';
+const startPage = Math.min(TOTAL - 1, Math.max(0, parseInt(new URLSearchParams(location.search).get('p') || '0', 10) || 0));
+const fill = document.getElementById('barfill');
+const pct  = document.getElementById('pct');
+const slider = document.getElementById('slider');
+slider.max = TOTAL - 1;
+slider.value = startPage;
+let loadedCount = 0;
+
+function preloadImage(i) {
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = img.onerror = () => {
+      loadedCount++;
+      const p = Math.round(loadedCount / TOTAL * 100);
+      fill.style.width = p + '%';
+      pct.textContent = p + '%';
+      res();
+    };
+    img.src = pageURL(i);
+  });
+}
+// Prime pagine subito, resto in background a piccoli lotti (stesso comportamento, meno picco memoria su mobile)
+(async () => {
+  await Promise.all([...Array(Math.min(6, TOTAL)).keys()].map(preloadImage));
+  initBook();
+  const BATCH = 6;
+  for (let s = 6; s < TOTAL; s += BATCH) {
+    await Promise.all([...Array(Math.min(BATCH, TOTAL - s)).keys()].map(k => preloadImage(s + k)));
+  }
+})();
+
+function initBook() {
+  const bookEl = document.getElementById('book');
+  const pageEls = [];
+  for (let i = 0; i < TOTAL; i++) {
+    const div = document.createElement('div');
+    div.className = 'page';
+    div.dataset.index = i;
+    const img = document.createElement('img');
+    img.className = 'page-img';
+    img.draggable = false;
+    img.src = pageURL(i);
+    img.alt = 'Pagina ' + (i + 1);
+    if (i > 5) { img.loading = 'lazy'; img.decoding = 'async'; }
+    div.appendChild(img);
+    pageEls.push(div);
+  }
+  bookEl.append(...pageEls);
+
+  // Mobile verticale = pagina singola, desktop = doppia — stessi tempi/ombre/suoni dell'originale
+  const mq = window.matchMedia('(max-width: 700px)');
+  const pageFlip = new St.PageFlip(bookEl, {
+    width: 432, height: 648,
+    size: 'stretch',
+    minWidth: 280, maxWidth: 1100, minHeight: 380, maxHeight: 1400,
+    showCover: true,
+    maxShadowOpacity: 0.5,
+    mobileScrollSupport: false,
+    flippingTime: 700,
+    usePortrait: mq.matches,
+    startZIndex: 5,
+    swipeDistance: 25,
+    startPage: startPage
+  });
+  pageFlip.loadFromHTML(pageEls);
+
+  // Se si attraversa il breakpoint (rotazione/resize), ricarica sulla stessa pagina per cambiare portrait/landscape
+  let curMQ = mq.matches;
+  const onMQ = e => {
+    if (e.matches !== curMQ) {
+      curMQ = e.matches;
+      location.replace(location.pathname + '?p=' + pageFlip.getCurrentPageIndex());
+    }
+  };
+  if (mq.addEventListener) mq.addEventListener('change', onMQ);
+  else if (mq.addListener) mq.addListener(onMQ);
+
+  // Flip sound — identico all'originale
+  const flipSound = new Audio('./assets/flip.mp3');
+  flipSound.preload = 'auto';
+  flipSound.volume = 0.85;
+  let soundOn = true;
+  function playFlip() {
+    if (!soundOn) return;
+    const s = flipSound.cloneNode();
+    s.volume = flipSound.volume;
+    s.play().catch(() => {});
+  }
+
+  const counter = document.getElementById('counter');
+  const thumbbar = document.getElementById('thumbbar');
+
+  function updateUI() {
+    const cur = pageFlip.getCurrentPageIndex();
+    counter.textContent = 'Pag. ' + (cur + 1) + ' / ' + TOTAL;
+    if (!sliderDragging && +slider.value !== cur) slider.value = cur;
+    const thumbs = thumbbar.querySelectorAll('img');
+    thumbs.forEach(t => t.classList.toggle('active', +t.dataset.page === cur));
+    const act = thumbbar.querySelector('img.active');
+    if (act) act.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  }
+  pageFlip.on('flip', () => { playFlip(); updateUI(); });
+
+  let sliderDragging = false;
+  slider.addEventListener('pointerdown', () => { sliderDragging = true; });
+  slider.addEventListener('change', () => {
+    sliderDragging = false;
+    const target = +slider.value;
+    const cur = pageFlip.getCurrentPageIndex();
+    if (target !== cur) { playFlip(); pageFlip.flip(target); }
+  });
+
+  document.getElementById('prev').onclick = () => { playFlip(); pageFlip.flipPrev(); };
+  document.getElementById('next').onclick = () => { playFlip(); pageFlip.flipNext(); };
+  const sndBtn = document.getElementById('sound-toggle');
+  sndBtn.onclick = () => {
+    soundOn = !soundOn;
+    sndBtn.textContent = soundOn ? '🔊 Suono: ON' : '🔇 Suono: OFF';
+    sndBtn.setAttribute('aria-pressed', String(soundOn));
+  };
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') { playFlip(); pageFlip.flipNext(); }
+    if (e.key === 'ArrowLeft')  { playFlip(); pageFlip.flipPrev(); }
+  });
+
+  let firstTouch = false;
+  function unlock() {
+    if (!firstTouch) {
+      firstTouch = true;
+      const sh = document.getElementById('start-hint');
+      if (sh) { sh.style.opacity = '0'; setTimeout(() => sh.remove(), 700); }
+    }
+  }
+  document.addEventListener('pointerdown', unlock);
+  document.addEventListener('keydown', unlock);
+
+  // thumbnails — stesse regole dell'originale (prime 24 + ogni 8 + ultima)
+  const thumbIdx = new Set();
+  for (let i = 0; i < 24; i++) thumbIdx.add(i);
+  for (let i = 24; i < TOTAL; i += 8) thumbIdx.add(i);
+  thumbIdx.add(TOTAL - 1);
+  [...thumbIdx].sort((a, b) => a - b).forEach(i => {
+    const img = document.createElement('img');
+    img.src = pageURL(i);
+    img.alt = 'Vai a pagina ' + (i + 1);
+    img.dataset.page = i;
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.onclick = () => { playFlip(); pageFlip.flip(i); };
+    thumbbar.appendChild(img);
+  });
+
+  document.getElementById('loading').style.display = 'none';
+  updateUI();
+}
+
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>
